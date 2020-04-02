@@ -1,0 +1,63 @@
+body
+{
+mirgin:0;
+padding:0;
+background-image:url("ban1v.jpg");
+-webkit-background-size:cover;
+background-size:cover;
+}
+.form-area{
+position:absolute;
+top:38%;
+left:50%;
+transform:translate(-50%,-50%);
+width:400px;
+height:485px;
+boxsizing:border-box;
+background:rgba(0,0,0,0.5);
+padding 40px;
+color:red;
+}
+h1{
+	margin:20px;
+	padding:0 0 20px;
+	font-weight:bold;
+	color:rgb(234,150,255);
+	left:750%;
+	right:50%;
+	align:center;
+}
+.form-area p{
+	margin :10px;
+	padding:10px;
+	font-weight:bold;
+	color:rgb(255,255,255);
+}
+.form-area input,select{
+	margin-bottom:20px;
+	width:100%;
+}
+.form-area input[type=text],
+.form-area input[type=password]{
+	border:none;
+	border-bottom:1px solid rgb(255,255,255);
+	background-color:transparent;
+	outlone:none;
+	height:40px;
+	color:#ffffff;
+	display:16px;
+}
+.form-area input[type=sumbit]{
+	border:none;
+	height:40px;
+	outline:none;
+	color:#ffffff;
+	font-size:15px;
+	background-color:tomato;
+	border-radius:20px;
+	cursor:pointer;
+}
+
+
+
+

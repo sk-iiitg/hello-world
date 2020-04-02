@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+function validateForm() {
+  var x = document.forms["myForm"]["usrnm"].value;
+  var y = document.forms["myForm"]["psw"].value;
+  if (x == "") {
+    alert("Username must be filled out");
+}
+ if(y=="")
+{ alert("Password must be filled out");}
+    return false;
+  
+}
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Add icon library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+body {font-family: Arial, Helvetica, sans-serif;}
+* {box-sizing: border-box;}
+
+.responsive {
+  max-width: 100%;
+  height: auto;
+text-align:center;
+}
+.input-container {
+  display: -ms-flexbox; /* IE10 */
+  display: flex;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.icon {
+  padding: 10px;
+  background: dodgerblue;
+  color: white;
+  min-width: 50px;
+  text-align: center;
+}
+
+.input-field {
+  width: 100%;
+  padding: 10px;
+  outline: none;
+}
+
+.input-field:focus {
+  border: 2px solid dodgerblue;
+}
+
+/* Set a style for the submit button */
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+
+}
+.btn {
+  background-color: dodgerblue;
+  color: white;
+  padding: 15px 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  opacity: 0.9;
+}
+
+.btn:hover {
+  opacity: 1;
+}
+</style>
+</head>
+<body>
+<div style="display: flex; justify-content: center; align-items:center;">
+<img src="7-512.png" alt="Image1"class="responsive"style="width:10em; height:10em;" />
+</div>
+<form name="myForm" action="Login.jsp" style="max-width:500px;margin:auto" method=post>
+  <h2>Login Form</h2>
+  <div class="input-container">
+    <i class="fa fa-user icon"></i>
+    <input class="input-field" type="text" placeholder="Username" name="usrnm" required >
+  </div>
+
+ 
+  
+  <div class="input-container">
+    <i class="fa fa-key icon"></i>
+    <input class="input-field" type="password" placeholder="Password" name="psw" required >
+  </div>
+
+  <button type="submit" class="btn">Submit</button>
+</form>
+
+</body>
+</html>
