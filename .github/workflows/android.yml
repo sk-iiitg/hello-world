@@ -1,6 +1,9 @@
 name: Clojure CI
 
 on:
+  push:
+    branches:
+    - '*'
   workflow_dispatch:
     inputs:
       mydata:
