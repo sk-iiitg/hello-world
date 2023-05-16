@@ -1,0 +1,16 @@
+name: Clojure CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      mydata:
+        description: 'enter data'
+        type: string
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run tests
+      run: echo ${{ github.event.inputs.mydata }}
