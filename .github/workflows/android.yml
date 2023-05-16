@@ -16,4 +16,4 @@ jobs:
 
     steps:
     - name: Run tests
-      run: echo ${{ github.event.inputs.mydata }}
+      run: echo  sushil ${{ github.event.inputs.mydata }}
