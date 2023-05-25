@@ -17,4 +17,4 @@ jobs:
           gh api \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/sk-iiitg/hello-world/actions/runs
+          /repos/sk-iiitg/hello-world/actions/workflows/5080184927/runs
