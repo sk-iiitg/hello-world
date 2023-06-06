@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       sincedate:
-      description: "To generate a report using data since 3 days ago give input '3 days ago'. Default is to get data since 1 week ago"
-      type: string
+        description: "To generate a report using data since 3 days ago give input '3 days ago'. Default is to get data since 1 week ago"
+        type: string
 
 jobs:
   github-ci-stats:
