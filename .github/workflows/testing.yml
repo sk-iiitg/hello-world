@@ -23,5 +23,13 @@ jobs:
       always() && github.ref_name == 'bors/staging' &&
       (needs.job1.result == 'failure' || needs.job2.result == 'failure')
     steps:
-      - name: Step 1
-        run: echo "Job 3 Step 1"
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: sushil
+      - name: run 
+        run: |
+          cd .github/workflows
+          ls
+          
