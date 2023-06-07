@@ -22,8 +22,8 @@ jobs:
     needs: [job2,job1]
     if: |
       always() &&
-      (needs.job1.result == 'success' || needs.job1.result == 'skipped') &&
-      (needs.job2.result == 'success' || needs.job2.result == 'skipped')
+      (needs.job1.result == 'failure' || needs.job1.result == 'skipped') &&
+      (needs.job2.result == 'failure' || needs.job2.result == 'skipped')
     steps:
       - name: Step 1
         run: echo "Job 3 Step 1"
