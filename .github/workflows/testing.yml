@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Step 1
-        run: return 0
+        run: echo hello
 
   job2:
     runs-on: ubuntu-latest
