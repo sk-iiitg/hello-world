@@ -7,6 +7,7 @@ on:
 
 jobs:
   last-job-status:
+    if: ${{ github.ref == 'bors/staging' || github.event_name == 'workflow_dispatch' }}
     name: Check last job status
     runs-on: ubuntu-latest
     steps:
