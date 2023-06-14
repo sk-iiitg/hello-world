@@ -7,7 +7,6 @@ on:
 
 jobs:
   last-job-status:
-    if: github.ref_name == 'bors/staging'|| github.workflow_dispatch == true
     name: Check last job status
     runs-on: ubuntu-latest
     steps:
@@ -15,4 +14,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo hello
+          echo hello ${{ github.workflow_dispatch }}
