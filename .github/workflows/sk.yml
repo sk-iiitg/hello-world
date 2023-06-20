@@ -19,6 +19,7 @@ jobs:
           echo hello sushil kumar
   first-job-status:
     name: Check first job status
+    needs: last-job-status
     if: success()
     runs-on: ubuntu-latest
     steps:
