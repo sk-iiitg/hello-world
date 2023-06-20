@@ -8,7 +8,7 @@
 </head>
 <body>
 <%@ page import="java.sql.*,java.io.*" %>
-<%
+<%vcbc
 try{
 String user=request.getParameter("user");
 String Name  =request.getsssParameter("Name");
