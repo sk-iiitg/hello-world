@@ -1,8 +1,8 @@
 name: My Workflow
 
 on:
-  pull_request:
   merge_group:
+    branches: [master]
 
 
 jobs:
