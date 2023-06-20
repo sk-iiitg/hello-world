@@ -26,14 +26,28 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          exit 1
           echo hello 
-          echo hello sushil kumar       
+          echo hello sushil kumar
+  testing-job-status:
+    name: teing first job status
+    needs: last-job-status
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: last deploy job status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo hello
+          sleep 20
+          echo hello sushil kumar        
           
   deploy-failure-alert:
     name: Pagerduty Alert
     runs-on: ubuntu-latest
     environment: '${{ needs.env.outputs.environment }}'
-    needs: [ first-job-status, last-job-status ] 
+    needs: [ first-job-status, last-job-status, testing-job-status ] 
       
     if: failure()
     steps:
