@@ -4,6 +4,8 @@ on:
   push:
     branches-ignore:
       - master # Deploys happen before merge with bors.
+    merge_group:
+      branches: [ master ]  
 
 jobs:
   last-job-status:
@@ -18,7 +20,6 @@ jobs:
           echo hello sushil kumar
   first-job-status:
     name: Check first job status
-    needs: last-job-status
     if: success()
     runs-on: ubuntu-latest
     steps:
@@ -26,6 +27,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+
           exit 1
           echo hello 
           echo hello sushil kumar
@@ -47,8 +49,7 @@ jobs:
     name: Pagerduty Alert
     runs-on: ubuntu-latest
     environment: '${{ needs.env.outputs.environment }}'
-    needs: [ first-job-status, last-job-status, testing-job-status ] 
-      
+    needs: [ first-job-status, last-job-status, testing-job-status ]  
     if: failure()
     steps:
       - name: Send PagerDuty alert on failure 
