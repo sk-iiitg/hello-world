@@ -22,5 +22,5 @@ jobs:
       - name: last deploy job status
         uses: Wandalen/wretry.action@v1.0.36
         with:
-          action:  ./.github/workflows/testing.yaml
+          uses:  ./.github/workflows/testing.yaml
   
