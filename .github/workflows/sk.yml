@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: Wandalen/wretry.action@v1.0.36
+        name: retry testing
         with:
           command: | 
             #!/bin/bash
