@@ -1,20 +1,11 @@
 name: My Workflow
 
 on:
-  merge_group:
-    branches: [master]
+  push: {}
+  
 
 
 jobs:
-  job1:
-    runs-on: ubuntu-latest
-    steps:
-      - name: retry
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 120
-          max_attempts: 2
-          retry_on: error
-          command: |
-            echo heelo 
-            exit 1
+  jobs-calling:
+    name: hello caller
+    uses: ./.github/workflows/testing.yaml 
