@@ -1,11 +1,23 @@
 name: Deploy
 on:
   workflow_dispatch: {}
+  workflow_call: {}
   push:
     branches-ignore:
       - master # Deploys happen before merge with bors.
 jobs:
-  run-sanity-tests:
-    name: Run Sanity Tests
-    uses:  ./.github/workflows/testing.yaml
-  
+  RETRY:
+    name: retry job with
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kar lo retry
+        uses: nick-fields/retry@v2
+        with:
+          timout_minutes: 120
+          max_attempts: 2
+          retry_on: error
+          command: |
+            echo "hello"
+            exit 1
+          
+
