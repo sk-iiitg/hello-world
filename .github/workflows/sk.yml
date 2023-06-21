@@ -4,14 +4,16 @@ on:
   push:
     branches-ignore:
       - master # Deploys happen before merge with bors.
-    merge_group:
-      branches: [ master ]  
-
 jobs:
   last-job-status:
     name: Check last job status
     runs-on: ubuntu-latest
     steps:
+      - uses: Wandalen/wretry.action@master
+        with:
+          run: |
+            echo hello world
+            exit 0
       - name: last deploy job status
         env:
           GH_TOKEN: ${{ github.token }}
