@@ -1,7 +1,6 @@
 name: My Workflow
 
 on:
-  workflow_run: {}
   push: {}
   
 
