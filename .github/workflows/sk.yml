@@ -20,46 +20,7 @@ jobs:
           attempt_limit: 3
           attempt_delay: 2000
       - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo hello 
-          echo hello sushil kumar
-  first-job-status:
-    name: Check first job status
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-
-          exit 1
-          echo hello 
-          echo hello sushil kumar
-  testing-job-status:
-    name: teing first job status
-    needs: last-job-status
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo hello
-          sleep 20
-          echo hello sushil kumar        
-          
-  deploy-failure-alert:
-    name: Pagerduty Alert
-    runs-on: ubuntu-latest
-    environment: '${{ needs.env.outputs.environment }}'
-    needs: [ first-job-status, last-job-status, testing-job-status ]  
-    if: failure()
-    steps:
-      - name: Send PagerDuty alert on failure 
-        run: |
-          echo hello 
-          echo hello sushil kumar 
+        uses: Wandalen/wretry.action@v1.0.36
+        with:
+          action:  ./.github/workflows/testing.yaml
+  
