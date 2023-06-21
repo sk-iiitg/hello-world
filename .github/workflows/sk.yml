@@ -12,9 +12,7 @@ jobs:
       - uses: Wandalen/wretry.action@master
         name: sk-retry
         with:
-          command: |
-            echo hello world
-            exit 0
+          command: echo hello
       - name: last deploy job status
         env:
           GH_TOKEN: ${{ github.token }}
