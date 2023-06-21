@@ -10,8 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: Wandalen/wretry.action@master
+        name: sk-retry
         with:
-          run: |
+          command: |
             echo hello world
             exit 0
       - name: last deploy job status
