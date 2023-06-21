@@ -13,11 +13,9 @@ jobs:
       - name: Kar lo retry
         uses: nick-fields/retry@v2
         with:
-          timout_minutes: 120
+          timeout_minutes: 120
           max_attempts: 2
           retry_on: error
           command: |
             echo "hello"
             exit 1
-          
-
