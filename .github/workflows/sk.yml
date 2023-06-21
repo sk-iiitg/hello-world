@@ -12,6 +12,7 @@ jobs:
       - uses: Wandalen/wretry.action@v1.0.36
         with:
           command: | 
+            #!/bin/bash
             s=$(($RANDOM %2))
             if [[ $s == 0 ]]; then
             echo "Good"
