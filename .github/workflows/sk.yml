@@ -13,7 +13,7 @@ jobs:
         with:
           command: | 
             echo hello
-            exit 0 
+            exit 1
           attempt_limit: 3
           attempt_delay: 2000
       - name: last deploy job status
