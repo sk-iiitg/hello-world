@@ -9,7 +9,7 @@ jobs:
     name: Check last job status
     runs-on: ubuntu-latest
     steps:
-      - uses: Wandalen/wretry.action@1.0.36
+      - uses: Wandalen/wretry.action@v1.0.36
         with:
           command: npm i
           attempt_limit: 3
