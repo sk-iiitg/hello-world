@@ -17,6 +17,7 @@ jobs:
             echo "Good"
             exit 0
             else
+            echo bad
             exit 1
             fi
 
