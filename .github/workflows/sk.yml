@@ -5,22 +5,7 @@ on:
     branches-ignore:
       - master # Deploys happen before merge with bors.
 jobs:
-  last-job-status:
-    name: Check last job status
-    runs-on: ubuntu-latest
-    steps:
-      - uses: Wandalen/wretry.action@v1.0.36
-        name: retry testing
-        with:
-          command: | 
-            #!/bin/bash
-            echo "Good"
-            exit 0
-
-          attempt_limit: 3
-          attempt_delay: 2000
-      - name: last deploy job status
-        uses: Wandalen/wretry.action@v1.0.36
-        with:
-          uses:  ./.github/workflows/testing.yaml
+  run-sanity-tests:
+    name: Run Sanity Tests
+    uses:  ./.github/workflows/testing.yaml
   
