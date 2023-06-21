@@ -9,4 +9,4 @@ on:
 jobs:
   jobs-calling:
     name: hello caller
-    uses: ./.github/workflows/testing.yaml 
+    uses: ./.github/workflows/sk.yaml 
