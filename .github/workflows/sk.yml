@@ -13,14 +13,8 @@ jobs:
         with:
           command: | 
             #!/bin/bash
-            s=$(jot -r 1 0 1)
-            if [[ $s == 0 ]]; then
             echo "Good"
             exit 0
-            else
-            echo bad
-            exit 1
-            fi
 
           attempt_limit: 3
           attempt_delay: 2000
