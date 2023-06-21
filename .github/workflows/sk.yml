@@ -13,7 +13,7 @@ jobs:
         with:
           command: | 
             #!/bin/bash
-            s=$(od -An -N1 -i /dev/random | awk '{print $1 % 2}')
+            s=$(jot -r 1 0 1)
             if [[ $s == 0 ]]; then
             echo "Good"
             exit 0
