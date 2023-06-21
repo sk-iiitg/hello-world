@@ -1,58 +1,24 @@
 name: Deploy
 on:
   workflow_dispatch: {}
+  workflow_call: {}
   push:
     branches-ignore:
       - master # Deploys happen before merge with bors.
-    merge_group:
-      branches: [ master ]  
-
 jobs:
-  last-job-status:
-    name: Check last job status
+  RETRY:
+    name: retry job with
     runs-on: ubuntu-latest
     steps:
-      - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo hello 
-          echo hello sushil kumar
-  first-job-status:
-    name: Check first job status
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-
-          exit 1
-          echo hello 
-          echo hello sushil kumar
-  testing-job-status:
-    name: teing first job status
-    needs: last-job-status
-    if: success()
-    runs-on: ubuntu-latest
-    steps:
-      - name: last deploy job status
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo hello
-          sleep 20
-          echo hello sushil kumar        
+      - name: Kar lo retry
+        uses: nick-fields/retry@v2
+        with:
+          timout_minutes: 120
+          max_attempts: 2
+          retry_on: error
+          command: |
+            echo "hello"
+            exit 1
           
-  deploy-failure-alert:
-    name: Pagerduty Alert
-    runs-on: ubuntu-latest
-    environment: '${{ needs.env.outputs.environment }}'
-    needs: [ first-job-status, last-job-status, testing-job-status ]  
-    if: failure()
-    steps:
-      - name: Send PagerDuty alert on failure 
-        run: |
-          echo hello 
-          echo hello sushil kumar 
+         
+ 
