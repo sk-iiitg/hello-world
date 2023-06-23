@@ -8,7 +8,7 @@
 </head>
 <body style="background-color:tomato;">
 
-<%String from=(String)session.getAttribute("from"); %>
+<%String from=(String)session.getAttribsssute("from"); %>
 <%String to=(String)session.getAttribute("to"); %>
 <% String date=(String)session.getAttribute("date"); %>
 <%String busid=(String)session.getAttribute("busid"); %>
