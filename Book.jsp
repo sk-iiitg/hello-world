@@ -28,7 +28,7 @@ connect=DriverManager.getConnection("jdbc:mysql://localhost:3306/sushil","root",
 statement=connect.createStatement();
 resultSet=statement.executeQuery("select St from transport where busid='"+St+"'");
 resultSet.next();
-String s=resultSet.getString("St");
+String s=resultSet.getString("St");z
 int ss=Integer.parseInt(s);
 String no=(String)session.getAttribute("no");
 int nn=Integer.parseInt(no);
