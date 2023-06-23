@@ -18,4 +18,4 @@ jobs:
           retry_on: error
           command: |
             echo "hello"
-            exit 1
+  
