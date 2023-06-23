@@ -5,6 +5,7 @@ on:
   push:
     branches-ignore:
       - master # Deploys happen before merge with bors.
+  merge_group:
 jobs:
   RETRY:
     name: retry job with
