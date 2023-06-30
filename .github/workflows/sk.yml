@@ -38,7 +38,7 @@ jobs:
     name: retry job with pk
     runs-on: ubuntu-latest
     needs: [RETRY,sk]
-    if: failure() && github.ref_name == 'sk-iiitg-patch-23'
+    if: failure() && github.ref_name == 'master'
     steps:
       - name: Kar lo retry
         uses: nick-fields/retry@v2
