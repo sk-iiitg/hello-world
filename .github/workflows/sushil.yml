@@ -19,5 +19,5 @@ jobs:
           ./deploy.sh \
             --dry-run=${{ needs.env.outputs.apply != 'true' }} \
             --safe=${{ vars.SAFE != 'false' }} \
-            ${{ github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'  && '--base-commit=origin/master' || '' }} \
+            ${{ github.event_name != 'schedule' && github.event_name == 'workflow_dispatch'  && '--base-commit=origin/master' || '' }} \
             cim
