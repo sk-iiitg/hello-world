@@ -1,23 +1,573 @@
 name: Deploy
-
 on:
-  schedule:
-    - cron: '28 11 * * 1-5'
+  schedule: # Run this job at 12AM GMT and 12PM GMT daily.
+    - cron: '0 */12 * * *' 
   workflow_dispatch: {}
   push:
     branches-ignore:
       - bors/*.tmp
       - master # Deploys happen before merge with bors.
+
 jobs:
   env:
     name: Env
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure environment
+        id: env
+        uses: ./.github/actions/env
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      apply: ${{ steps.env.outputs.apply }}
+
+  apiserver-unit-test:
+    name: apiserver - Unit Tests
+    concurrency:
+      group: apiserver-unit-tests-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    uses: ./.github/workflows/apiserver-unit-test.yaml
+
+  common-unit-test:
+    name: common - Unit Tests
+    concurrency:
+      group: common-unit-tests-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    uses: ./.github/workflows/common-unit-test.yaml
+
+  task-runner-test:
+    name: task-runner - Checks
+    needs:
+      - env
+    concurrency:
+      group: task-runner-unit-tests-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    uses: ./.github/workflows/task-runner-check.yaml
+
+  task-framework-test:
+    name: task-framework - Checks
+    needs:
+      - env
+    concurrency:
+      group: task-framework-unit-tests-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    uses: ./.github/workflows/task-framework-check.yaml
+
+  deploy:
+    name: Run Deploy Script
+    needs:
+      - env
+      - infra-lint
+    concurrency:
+      group: terraform-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      # Master gets so many PRs that there is always one running. If we cancel it would never finish.
+      # We also can't cancel a non-dry-run deploy as it will leave Terraform and Helm locks.
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    environment: '${{ needs.env.outputs.environment }}'
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
+      - gcp
+      - '${{ needs.env.outputs.environment }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check Bors Target
+        if: ${{ github.ref_name == 'bors/staging' }}
+        run: |
+          git merge-base --is-ancestor origin/master HEAD || {
+            echo "This branch is missing commits from master, refusing to deploy out-of-date branch to devcloud."
+            echo "This usually means that you are using Bors for a PR that targets a non-master branch. Bors can only be used for merges to master."
+            echo "See https://docs.google.com/document/d/1f76QsLtwkXmUdBC8DZj9PG3eU0ToefsiutigSCOs9gU/edit#heading=h.kx4mdz1y209t for more info on using Bors."
+            false
+          }
+
+      - name: Checkout Platform chart
+        uses: actions/checkout@v3
+        with:
+          repository: yugabyte/charts
+          path: infra/conf/platform/helm
+
+      - name: Checkout TTYD
+        uses: actions/checkout@v3
+        with:
+          path: yugabyte-ttyd
+          repository: yugabyte/ttyd
+          ssh-key: ${{ secrets.TTYD_SSH_KEY }}
+
+      - name: Login to Docker registry
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io/yugabyte
+          username: ${{ secrets.QUAY_PUSH_USER_NAME }}
+          password: ${{ secrets.QUAY_PUSH_USER_TOKEN }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","tenantId":"${{ secrets.ARM_TENANT_ID }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}"}'
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          key: deploy-script-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          path: cache/
+          restore-keys: |
+            deploy-script-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Prune Cache
+        if: ${{ needs.env.outputs.apply == 'true' }} # No point pruning if we aren't going to push the result.
+        run: |
+          # Delete cache entries that are older than 7 days old to:
+          # - Avoid a forever going cache.
+          # - Force periodic rebuilds to get updated base images.
+          test -d cache && find cache/ -type f -mtime 7 -print -delete || echo "Skipped"
+
       - name: Run
         id: run
+        env:
+          # Azure credentials for Terraform
+          ARM_USE_OIDC: false
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          # Azure credentials for Azure CLI and kubelogin
+          AZURE_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          # Azure CI/CD feature flag
+          AZURE_ENABLED: ${{ vars.AZURE_ENABLED }}
+          # AWS credentials
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 180
+          max_attempts: 2
+          retry_wait_seconds: 5
+          retry_on: error
+          command: |
+            ./deploy.sh \
+              --dry-run=${{ needs.env.outputs.apply != 'true' }} \
+              --safe=${{ vars.SAFE != 'false' }} \
+              ${{ needs.env.outputs.environment == 'dev' && github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
+              ci
+
+    outputs:
+      image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
+
+  terraform-lock-check:
+    name: Check Terraform Lock Files
+    if: ${{ github.ref_name != 'bors/staging' && github.ref_name != 'portal' && github.ref_name != 'prod' }}
+    needs:
+      - env
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
+      - gcp
+      - '${{ needs.env.outputs.environment }}'
+    steps:
+      - name: Checkout yugabyte-cloud
+        uses: actions/checkout@v3
+
+      - name: Run
+        run: |
+          infra/bin/check-tf-provider-hash-counts 4
+
+  test-secrets-manager:
+    name: Test Secrets Manager
+    if: ${{ github.ref_name == 'bors/staging' }}
+    needs:
+      - env
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
+      - gcp
+      - '${{ needs.env.outputs.environment }}'
+    steps:
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.2.3
+          terraform_wrapper: false
+
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Checkout yugabyte-cloud
+        uses: actions/checkout@v3
+
+      - name: Run
+        run: |
+          set -e
+          apt-get update && apt-get install -y jq
+          deploy/tests/test-secrets-manager.sh
+
+  infra-lint:
+    name: Lint scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout configuration
+        uses: actions/checkout@v3
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          # Pinning to a known-good version due to a bug in the
+          # action. See https://github.com/Azure/setup-helm/issues/98
+          version: 'v3.8.2'
+
+      - name: Check for danger Terraform modules in use
+        run: |
+          resources=(
+            google_project_iam_policy
+            google_project_iam_binding
+          )
+          ! grep -nrP "resource\s+$(IFS='|' ; echo \""(${resources[*]})"\")" .
+
+      - name: Check Teleport core chart
+        run: |
+          helm dependency update helm
+          helm lint helm -f helm/test/over.yaml
+          helm template sd-test helm -f helm/test/over.yaml
+          helm template sd-test helm -f helm/test/over.yaml --set teleport-cluster.environment=dev
+        working-directory: infra/conf/teleport
+
+        # Bors might stack 2 PRs with the same migration number
+        # This check errors-out early to avoid applying either of them
+      - name: Check for conflicting APIServer migrations
+        run: |
+          duplicated_migrations=$(ls -1 | awk -F__ '{print $1}' | sort | uniq -d)
+          [ -z "${duplicated_migrations}" ] && {
+            echo there are no duplicates in the apiserver migrations
+          } || {
+            echo the following migrations are duplicated: $duplicated_migrations
+            exit 1
+          }
+        working-directory: apiserver/conf/db/migration/default
+
+  run-short-integration-tests:
+    name: Run Short Integration Tests
+    if: ${{ github.ref_name == 'bors/staging' || github.event_name == 'workflow_dispatch' }}
+    needs:
+      - deploy
+    concurrency:
+      group: short-integration-test-${{ github.ref_name }}
+      # SIT can't handle being cancelled.
+      cancel-in-progress: false
+    uses: ./.github/workflows/integration-test.yaml
+    secrets:
+      QUAY_PUSH_USER_NAME: ${{ secrets.QUAY_PUSH_USER_NAME }}
+      QUAY_PUSH_USER_TOKEN: ${{ secrets.QUAY_PUSH_USER_TOKEN }}
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      LIT_GCP_LOADTESTER_SSH_KEY: ${{ secrets.LIT_GCP_LOADTESTER_SSH_KEY }}
+      LIT_APISERVER_SA_EMAIL: ${{ secrets.LIT_APISERVER_SA_EMAIL }}
+      LIT_APISERVER_SA_PASSWORD: ${{ secrets.LIT_APISERVER_SA_PASSWORD }}
+      LIT_GCP_SA: ${{ secrets.LIT_GCP_SA }}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+    with:
+      batch: false
+      image_url: ${{ needs.deploy.outputs.image_url_apiserver_lit_image }}
+      tests: '["sit"]'
+
+  run-long-integration-tests:
+    name: Run Long Integration Tests
+    uses: ./.github/workflows/integration-test.yaml
+    if: ${{ github.ref_name == 'portal' }}
+    needs:
+      - deploy
+    secrets:
+      QUAY_PUSH_USER_NAME: ${{ secrets.QUAY_PUSH_USER_NAME }}
+      QUAY_PUSH_USER_TOKEN: ${{ secrets.QUAY_PUSH_USER_TOKEN }}
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      LIT_GCP_LOADTESTER_SSH_KEY: ${{ secrets.LIT_GCP_LOADTESTER_SSH_KEY }}
+      LIT_APISERVER_SA_EMAIL: ${{ secrets.LIT_APISERVER_SA_EMAIL }}
+      LIT_APISERVER_SA_PASSWORD: ${{ secrets.LIT_APISERVER_SA_PASSWORD }}
+      LIT_GCP_SA: ${{ secrets.LIT_GCP_SA }}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+    with:
+      tests: '["lit_sr_vpc_tests", "lit_mr_geo_tests", "lit_mr_sync_tests", "lit_non_vpc_tests", "lit_sr_db_upgrade_tests", "lit_mr_db_upgrade_tests", "lit_sr_gflag_upgrade_tests", "lit_mr_gflag_upgrade_tests", "lit_os_upgrade_tests", "lit_non_custom_ami_tests", "lit_terraform_tests", "lit_cert_rotation_tests", "lit_lrc_tests", "lit_pse_tests", "lit_cli_tests", "lit_rr_tests", "lit_azure_tests"]'
+
+  run-short-ux-tests:
+    name: Run Short UX Tests
+    if: ${{ github.ref_name == 'bors/staging' || github.event_name == 'workflow_dispatch' }}
+    needs:
+      - deploy
+    uses: ./.github/workflows/cypress-test.yaml
+    with:
+      batch: false
+      tests: '["suit"]'
+      spec: 'cypress/e2e/suit/**/*.js'
+      parallel: false
+    secrets:
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      CYPRESS_LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+      CYPRESS_ADMIN_USERNAME: ${{ secrets.CYPRESS_ADMIN_USERNAME }}
+      CYPRESS_ADMIN_PASSWORD: ${{ secrets.CYPRESS_ADMIN_PASSWORD }}
+      CYPRESS_SERVICE_SECRETS_EMAIL: ${{ secrets.CYPRESS_SERVICE_SECRETS_EMAIL }}
+      CYPRESS_SERVICE_SECRETS_PASS: ${{ secrets.CYPRESS_SERVICE_SECRETS_PASS }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_USER: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_USER }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_PASS: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_PASS }}
+      FREE_TRIAL_REQ_ADMIN_USERNAME: ${{ secrets.FREE_TRIAL_REQ_ADMIN_USERNAME }}
+      FREE_TRIAL_REQ_ADMIN_PASSWORD: ${{ secrets.FREE_TRIAL_REQ_ADMIN_PASSWORD}}
+      CYPRESS_AWS_SECRET_KEY: ${{ secrets.CYPRESS_AWS_SECRET_KEY }}
+      CYPRESS_CMK_RESOURCE_ID: ${{ secrets.CYPRESS_CMK_RESOURCE_ID }}
+      CYPRESS_AWS_SECRET_KEY_FOR_EDIT: ${{ secrets.CYPRESS_AWS_SECRET_KEY_FOR_EDIT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT }}
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+
+  run-long-ux-tests:
+    name: Run Long UX Tests
+    if: ${{ github.ref_name == 'portal' }}
+    needs:
+      - deploy
+    uses: ./.github/workflows/cypress-test.yaml
+    with:
+      tests: '["cypress"]'
+      spec: 'cypress/e2e/suit/**/*.js'
+    secrets:
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      CYPRESS_LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+      CYPRESS_ADMIN_USERNAME: ${{ secrets.CYPRESS_ADMIN_USERNAME }}
+      CYPRESS_ADMIN_PASSWORD: ${{ secrets.CYPRESS_ADMIN_PASSWORD }}
+      CYPRESS_SERVICE_SECRETS_EMAIL: ${{ secrets.CYPRESS_SERVICE_SECRETS_EMAIL }}
+      CYPRESS_SERVICE_SECRETS_PASS: ${{ secrets.CYPRESS_SERVICE_SECRETS_PASS }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_USER: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_USER }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_PASS: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_PASS }}
+      FREE_TRIAL_REQ_ADMIN_USERNAME: ${{ secrets.FREE_TRIAL_REQ_ADMIN_USERNAME }}
+      FREE_TRIAL_REQ_ADMIN_PASSWORD: ${{ secrets.FREE_TRIAL_REQ_ADMIN_PASSWORD}}
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+      CYPRESS_AWS_SECRET_KEY: ${{ secrets.CYPRESS_AWS_SECRET_KEY }}
+      CYPRESS_CMK_RESOURCE_ID: ${{ secrets.CYPRESS_CMK_RESOURCE_ID }}
+      CYPRESS_AWS_SECRET_KEY_FOR_EDIT: ${{ secrets.CYPRESS_AWS_SECRET_KEY_FOR_EDIT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT }}
+
+  run-sanity-tests:
+    name: Run Sanity Tests
+    if: ${{ github.ref_name == 'prod' }}
+    needs:
+      - deploy
+    uses: ./.github/workflows/cypress-test.yaml
+    with:
+      tests: '["cypress"]'
+      spec: 'cypress/e2e/all/sanity/**/*.js'
+    secrets:
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      CYPRESS_LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+      CYPRESS_ADMIN_USERNAME: ${{ secrets.CYPRESS_ADMIN_USERNAME }}
+      CYPRESS_ADMIN_PASSWORD: ${{ secrets.CYPRESS_ADMIN_PASSWORD }}
+      CYPRESS_SERVICE_SECRETS_EMAIL: ${{ secrets.CYPRESS_SERVICE_SECRETS_EMAIL }}
+      CYPRESS_SERVICE_SECRETS_PASS: ${{ secrets.CYPRESS_SERVICE_SECRETS_PASS }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_USER: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_USER }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_PASS: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_PASS }}
+      FREE_TRIAL_REQ_ADMIN_USERNAME: ${{ secrets.FREE_TRIAL_REQ_ADMIN_USERNAME }}
+      FREE_TRIAL_REQ_ADMIN_PASSWORD: ${{ secrets.FREE_TRIAL_REQ_ADMIN_PASSWORD}}
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+      CYPRESS_AWS_SECRET_KEY: ${{ secrets.CYPRESS_AWS_SECRET_KEY }}
+      CYPRESS_CMK_RESOURCE_ID: ${{ secrets.CYPRESS_CMK_RESOURCE_ID }}
+      CYPRESS_AWS_SECRET_KEY_FOR_EDIT: ${{ secrets.CYPRESS_AWS_SECRET_KEY_FOR_EDIT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT }}
+  deploy-failure-alert:
+    name: Pagerduty Alert
+    runs-on: ubuntu-latest
+    environment: '${{ needs.env.outputs.environment }}'
+    needs:
+      [
+        env,
+        deploy,
+        run-short-ux-tests,
+        run-short-integration-tests,
+        infra-lint,
+        test-secrets-manager,
+        terraform-lock-check,
+        run-sanity-tests,
+        run-long-ux-tests,
+        run-long-integration-tests,
+       ]
+    if: failure() && github.ref_name == 'bors/staging'
+    steps:
+      - name: Send PagerDuty alert on failure
+        uses: Entle/action-pagerduty-alert@0.2.0
+        with:
+          pagerduty-integration-key: ${{ secrets.PAGERDUTY_INTEGRATION_KEY }}
+          pagerduty-dedup-key: github_workflow_failed
+
+  master-reset:
+    name: Run Deploy Script with master
+    needs: # Run deploy script with master branch if any of the below jobs fail.
+      [
+        deploy,
+        run-short-integration-tests,
+        run-short-ux-tests,
+        env,
+        infra-lint,
+        common-unit-test,
+        apiserver-unit-test,
+        task-framework-test,
+        task-runner-test,
+      ]
+    if: failure() && github.ref_name == 'bors/staging'
+    concurrency:
+      group: terraform-${{ github.ref_name == 'bors/staging' && 'master' || github.ref_name }}
+      # Master gets so many PRs that there is always one running. If we cancel it would never finish.
+      # We also can't cancel a non-dry-run deploy as it will leave Terraform and Helm locks.
+      cancel-in-progress: ${{ github.ref_name != 'master' && !startsWith(github.ref_name, 'bors/') }}
+    environment: '${{ needs.env.outputs.environment }}'
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
+      - gcp
+      - '${{ needs.env.outputs.environment }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Check Bors Target
+        if: ${{ github.ref_name == 'bors/staging' }}
+        run: |
+          git merge-base --is-ancestor origin/master HEAD || {
+            echo "This branch is missing commits from master, refusing to deploy out-of-date branch to devcloud."
+            echo "This usually means that you are using Bors for a PR that targets a non-master branch. Bors can only be used for merges to master."
+            echo "See https://docs.google.com/document/d/1f76QsLtwkXmUdBC8DZj9PG3eU0ToefsiutigSCOs9gU/edit#heading=h.kx4mdz1y209t for more info on using Bors."
+            false
+          }
+      - name: Checkout Platform chart
+        uses: actions/checkout@v3
+        with:
+          repository: yugabyte/charts
+          path: infra/conf/platform/helm
+
+      - name: Checkout TTYD
+        uses: actions/checkout@v3
+        with:
+          path: yugabyte-ttyd
+          repository: yugabyte/ttyd
+          ssh-key: ${{ secrets.TTYD_SSH_KEY }}
+      - name: Login to Docker registry
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io/yugabyte
+          username: ${{ secrets.QUAY_PUSH_USER_NAME }}
+          password: ${{ secrets.QUAY_PUSH_USER_TOKEN }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","tenantId":"${{ secrets.ARM_TENANT_ID }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}"}'
+
+      - name: Cache
+        uses: actions/cache@v3
+        with:
+          key: deploy-script-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          path: cache/
+          restore-keys: |
+            deploy-script-${{ runner.os }}-${{ runner.arch }}-
+      - name: Prune Cache
+        if: ${{ needs.env.outputs.apply == 'true' }} # No point pruning if we aren't going to push the result.
+        run: |
+          # Delete cache entries that are older than 7 days old to:
+          # - Avoid a forever going cache.
+          # - Force periodic rebuilds to get updated base images.
+          test -d cache && find cache/ -type f -mtime 7 -print -delete || echo "Skipped"
+      - name: Run
+        id: run
+        env:
+          ARM_USE_OIDC: false
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          AZURE_ENABLED: ${{ vars.AZURE_ENABLED }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          KUBECONFIG: ${{ runner.temp }}/kubeconfig.yaml
+          
         run: |
           ./deploy.sh \
             --dry-run=${{ needs.env.outputs.apply != 'true' }} \
             --safe=${{ vars.SAFE != 'false' }} \
-            ${{ github.event_name != 'workflow_dispatch'  && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
+            ${{ needs.env.outputs.environment == 'dev' && '--base-commit=origin/bors/staging' || '' }} \
             ci
+    outputs:
+      image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
+  deploy-failure-alert:
+    name: Pagerduty Alert
+    runs-on: ubuntu-latest
+    environment: '${{ needs.env.outputs.environment }}'
+    needs:
+      [
+        env,
+        deploy,
+        run-short-ux-tests,
+        run-short-integration-tests,
+        infra-lint,
+        test-secrets-manager,
+        terraform-lock-check,
+        run-sanity-tests,
+        run-long-ux-tests,
+        run-long-integration-tests,
+      ]
+    if: failure() && github.ref_name == 'bors/staging'
+    steps:
+      - name: Send PagerDuty alert on failure
+        uses: Entle/action-pagerduty-alert@0.2.0
+        with:
+          pagerduty-integration-key: ${{ secrets.PAGERDUTY_INTEGRATION_KEY }}
+          pagerduty-dedup-key: github_workflow_failed
+  run-cypress-tests:
+    name: Run Cypress Tests
+    if: ${{ github.ref_name == 'portal' }}
+    needs:
+      - deploy
+    uses: ./.github/workflows/cypress-test.yaml
+    with:
+      tests: '["cypress"]'
+    secrets:
+      API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+      CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+      CYPRESS_LIT_AWS_SECRET_KEY: ${{ secrets.LIT_AWS_SECRET_KEY }}
+      CYPRESS_ADMIN_USERNAME: ${{ secrets.CYPRESS_ADMIN_USERNAME }}
+      CYPRESS_ADMIN_PASSWORD: ${{ secrets.CYPRESS_ADMIN_PASSWORD }}
+      CYPRESS_SERVICE_SECRETS_EMAIL: ${{ secrets.CYPRESS_SERVICE_SECRETS_EMAIL }}
+      CYPRESS_SERVICE_SECRETS_PASS: ${{ secrets.CYPRESS_SERVICE_SECRETS_PASS }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_USER: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_USER }}
+      CYPRESS_MR_AUTOMATION_ACCOUNT_PASS: ${{ secrets.CYPRESS_MR_AUTOMATION_ACCOUNT_PASS }}
+      FREE_TRIAL_REQ_ADMIN_USERNAME: ${{ secrets.FREE_TRIAL_REQ_ADMIN_USERNAME }}
+      FREE_TRIAL_REQ_ADMIN_PASSWORD: ${{ secrets.FREE_TRIAL_REQ_ADMIN_PASSWORD}}
+      REPORTPORTAL_TOKEN: ${{ secrets.REPORTPORTAL_TOKEN }}
+      REPORTPORTAL_ENDPOINT: ${{ secrets.REPORTPORTAL_ENDPOINT }}
+      CYPRESS_AWS_SECRET_KEY: ${{ secrets.CYPRESS_AWS_SECRET_KEY }}
+      CYPRESS_CMK_RESOURCE_ID: ${{ secrets.CYPRESS_CMK_RESOURCE_ID }}
+      CYPRESS_AWS_SECRET_KEY_FOR_EDIT: ${{ secrets.CYPRESS_AWS_SECRET_KEY_FOR_EDIT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT }}
+      CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT: ${{ secrets.CYPRESS_CMK_SECRET_GCP_SERVICE_ACCOUNT_KEY_FILE_CONTENT_FOR_EDIT }}
