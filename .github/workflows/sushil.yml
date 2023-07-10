@@ -20,4 +20,4 @@ jobs:
             --dry-run=${{ needs.env.outputs.apply != 'true' }} \
             --safe=${{ vars.SAFE != 'false' }} \
             ${{ needs.env.outputs.environment == 'dev' && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
-            ci
+            cim
