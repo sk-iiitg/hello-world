@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   schedule:
-    - cron: '12 11 * * 1-5'
+    - cron: '28 11 * * 1-5'
   workflow_dispatch: {}
   push:
     branches-ignore:
@@ -19,6 +19,5 @@ jobs:
           ./deploy.sh \
             --dry-run=${{ needs.env.outputs.apply != 'true' }} \
             --safe=${{ vars.SAFE != 'false' }} \
-            ${{ needs.env.outputs.apply != 'true' && '--base-commit=origin/master' || '' }} \
-            ${{ needs.env.outputs.environment == 'dev' && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
+            ${{ github.event_name != 'workflow_dispatch'  && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
             ci
