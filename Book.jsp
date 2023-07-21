@@ -17,7 +17,7 @@
 <h1>Started from:<%=from %></h1>
 <h1>Destination:<%=to %></h1>
 <h1> Date of journey<%=date %></h1>
-
+xxx
 <%@ page import="java.sql.*,java.io.*" %>
 <% Connection connect=null;
 ResultSet resultSet=null;;
