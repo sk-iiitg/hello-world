@@ -31,5 +31,5 @@ jobs:
           max_attempts: 2
           retry_on: error
           command: |
-            echo "hello"         
+            echo "hello yaar"         
   
