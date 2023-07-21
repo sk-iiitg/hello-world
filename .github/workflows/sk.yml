@@ -24,6 +24,27 @@ jobs:
             echo $github.event.pull_request.labels.*.name
             labels=$(echo "${{ github.event.pull_request.labels }}" | jq '.[].name')
             echo "Labels: $labels"
+      - name: Get Pull Request Number
+        id: pr_number
+        run: |
+          pr_number=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}" \
+            | jq -r '.pull_request.url' | awk -F'/' '{print $NF}')
+          echo "::set-output name=number::$pr_number"
+
+      - name: Get Pull Request Labels
+        id: pr_labels
+        run: |
+          pr_number="${{ steps.pr_number.outputs.number }}"
+          labels=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${pr_number}/labels" \
+            | jq -r '.[].name')
+          echo "::set-output name=labels::$labels"
+
+      - name: Print Labels
+        run: |
+          labels="${{ steps.pr_labels.outputs.labels }}"
+          echo "Labels: $labels"      
             
   Revert:
     name: revert with master
