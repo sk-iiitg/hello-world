@@ -19,6 +19,7 @@ jobs:
           retry_on: error
           command: |
             echo "hello"
+            echo $github.event.pull_request.labels.*.name
   Revert:
     name: revert with master
     runs-on: ubuntu-latest
