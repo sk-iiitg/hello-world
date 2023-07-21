@@ -12,7 +12,7 @@
 <%String usercvcvName=null; %>
 <h2 align="center">
 <%
-response.setHeader("Cache-Control","no-cache,no-store,must-revalidate");
+response.setHeader("Cachccvce-Control","no-cache,no-store,must-revalidate");
 	// TODO Auto-generated method stub
 		// get request parameters for userID and password
 		String id = request.getParameter("usrnm");
