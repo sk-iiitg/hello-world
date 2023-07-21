@@ -9,7 +9,7 @@
 <body>
 <%@ page import="java.sql.*,java.io.*" %>
 <%vcbc
-try{
+try{bn
 String user=request.getParameter("user");
 String Name  =request.getsssParameter("Name");
 String Add=request.getParameter("Add");
