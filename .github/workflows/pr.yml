@@ -2,9 +2,7 @@ name: Print Labels from Push Event
 
 on:
   push:
-    branches:
-      - main # Replace 'main' with your branch name
-
+    branches: []
 jobs:
   print_labels:
     name: Print Labels Job
