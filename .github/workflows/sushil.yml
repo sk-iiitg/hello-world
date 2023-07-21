@@ -7,7 +7,7 @@ on:
       - master # Deploys happen before merge with bors.
 jobs:
   env:
-    name: Env
+    name: Testing
     runs-on: ubuntu-latest
     steps:
       - name: Run
