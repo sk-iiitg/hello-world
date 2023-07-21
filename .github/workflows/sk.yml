@@ -11,6 +11,8 @@ jobs:
     name: retry job with
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Kar lo retry
         uses: nick-fields/retry@v2
         with:
@@ -20,6 +22,9 @@ jobs:
           command: |
             echo "hello"
             echo $github.event.pull_request.labels.*.name
+            labels=$(echo "${{ github.event.pull_request.labels }}" | jq '.[].name')
+            echo "Labels: $labels"
+            
   Revert:
     name: revert with master
     runs-on: ubuntu-latest
