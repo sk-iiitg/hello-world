@@ -19,4 +19,17 @@ jobs:
           retry_on: error
           command: |
             echo "hello"
+  Revert:
+    name: revert with master
+    runs-on: ubuntu-latest
+    if: contains( github.event.pull_request.labels.*.name, 'no_revert')
+    steps:
+      - name: Kar lo retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 120
+          max_attempts: 2
+          retry_on: error
+          command: |
+            echo "hello"         
   
