@@ -9,7 +9,7 @@
 <body style="background-color:powderblue">
 <%@ page import="java.sql.*,java.io.*"%>
 <%int flag1=0,flag2=0; %>
-<%String userName=null; %>
+<%String usercvcvName=null; %>
 <h2 align="center">
 <%
 response.setHeader("Cache-Control","no-cache,no-store,must-revalidate");
