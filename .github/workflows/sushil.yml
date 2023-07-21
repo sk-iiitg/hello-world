@@ -1,8 +1,5 @@
 name: Deploy
-
 on:
-  schedule:
-    - cron: '28 11 * * 1-5'
   workflow_dispatch: {}
   push:
     branches-ignore:
@@ -16,8 +13,18 @@ jobs:
       - name: Run
         id: run
         run: |
-          ./deploy.sh \
-            --dry-run=${{ needs.env.outputs.apply != 'true' }} \
-            --safe=${{ vars.SAFE != 'false' }} \
-            ${{ github.event_name != 'workflow_dispatch'  && github.event_name != 'schedule' && '--base-commit=origin/master' || '' }} \
-            ci
+          echo hello
+          sleep 300
+  check_pr_labels_job:
+    runs-on: ubuntu-latest
+    name: A job to check the PR labels contain given labels
+    steps:
+    - name: Check PR labels action step
+      id: check_pr_labels
+      uses: shioyang/check-pr-labels-on-push-action@v1.0.9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        labels: '["enhancement"]'
+      timeout-minutes: 5
+    - name: See result
+      run: echo "${{ steps.check_pr_labels.outputs.result }}"           
