@@ -1,0 +1,17 @@
+name: Prechecks
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches-ignore:
+      - bors/*.tmp
+      - master # Deploys happen before merge with bors.
+jobs:
+  env:
+    name: Env
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'no_revert')
+    steps:
+      - name: Precheck
+        run: |
+          echo hello
