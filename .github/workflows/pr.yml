@@ -16,7 +16,11 @@ jobs:
           key: ${{ runner.os }}-datadog-forwarder-${{ hashFiles('datadog-forwarder.zip') }}
       - name: See result
         run: |
+            if [[ ! -f datadog-forwarder.zip ]]; then
             tmp_filename="datadog-forwarder.zip.tmp"
             curl -f -o $tmp_filename -L https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip
             mv $tmp_filename datadog-forwarder.zip
+            else
+            echo "datadog-forwarder.zip already exists. Using cached version."
+            fi
     
