@@ -11,8 +11,7 @@ jobs:
     steps:
     - name: See result
       run: |
-          datadog_forwarder_url = "https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip"
           tmp_filename="datadog-forwarder.zip.tmp-${uuid()}"
-          curl -f -o $tmp_filename -L '${local.datadog_forwarder_url}'
+          curl -f -o $tmp_filename -L https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip"
           mv $tmp_filename datadog-forwarder.zip
     
