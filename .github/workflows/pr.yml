@@ -9,9 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to check the PR labels contain given labels
     steps:
-    - name: See result
-      run: |
-          tmp_filename="datadog-forwarder.zip.tmp"
-          curl -f -o $tmp_filename -L https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip
-          mv $tmp_filename datadog-forwarder.zip
+      - name: Cache datadog-forwarder.zip
+        uses: actions/cache@v2
+        with:
+          path: datadog-forwarder.zip
+          key: ${{ runner.os }}-datadog-forwarder-${{ hashFiles('datadog-forwarder.zip') }}
+      - name: See result
+        run: |
+            tmp_filename="datadog-forwarder.zip.tmp"
+            curl -f -o $tmp_filename -L https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip
+            mv $tmp_filename datadog-forwarder.zip
     
