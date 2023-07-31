@@ -12,8 +12,8 @@ jobs:
       - name: Cache datadog-forwarder.zip
         uses: actions/cache@v2
         with:
-          path: datadog-forwarder.zip
-          key: ${{ runner.os }}-datadog-forwarder-${{ hashFiles('datadog-forwarder.zip') }}
+          path: datadog-forwfdgarder.zip
+          key: ${{ runner.os }}-datadog-forwarder-${{ hashFiles('datadog-forwfdgarder.zip') }}
       - name: See result
         run: |
             if [[ ! -f datadog-forwarder.zip ]]; then
