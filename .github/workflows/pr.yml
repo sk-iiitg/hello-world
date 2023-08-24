@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     name: Run Deploy Script
+     runs-on: ubuntu-latest
     steps:
       - name: Run
         run: |
