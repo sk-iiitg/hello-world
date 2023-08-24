@@ -1,26 +1,30 @@
-name: Print Labels from Push Event
-
+name: Deploy
 on:
+  schedule: # Run this job at 12AM GMT and 12PM GMT daily.
+    - cron: '0 */12 * * *'
   workflow_dispatch: {}
   push:
-    branches: []
+
 jobs:
-  check_pr_labels_job:
-    runs-on: ubuntu-latest
-    name: A job to check the PR labels contain given labels
+  deploy:
+    name: Run Deploy Script
     steps:
-      - name: Cache datadog-forwarder.zip
-        uses: actions/cache@v2
-        with:
-          path: datadog-forwfdgarder.zip
-          key: ${{ runner.os }}-datadog-forwarder-${{ hashFiles('datadog-forwfdgarder.zip') }}
-      - name: See result
+      - name: Run
         run: |
-            if [[ ! -f datadog-forwarder.zip ]]; then
-            tmp_filename="datadog-forwarder.zip.tmp"
-            curl -f -o $tmp_filename -L https://github.com/DataDog/datadog-serverless-functions/releases/download/aws-dd-forwarder-3.32.0/aws-dd-forwarder-3.32.0.zip
-            mv $tmp_filename datadog-forwarder.zip
-            else
-            echo "datadog-forwarder.zip already exists. Using cached version."
-            fi
-    
+          exit 1
+
+
+  master-reset:
+    name: Run Deploy Script with master
+    needs: 
+      [
+        deploy,
+      ]
+    if: failure()
+    runs-on: ubuntu-latest
+     
+    steps:
+      - name: Run
+
+        run: |
+          echo hello
