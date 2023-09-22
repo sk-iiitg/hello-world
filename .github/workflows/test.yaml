@@ -1,0 +1,20 @@
+name: Your GitHub Actions Workflow
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  your_job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Check if the event is a push
+      - name: Check if push event
+        id: is_push
+        run: echo "::set-output name=is_push::true"
+        if: github.event_name != 'push'
