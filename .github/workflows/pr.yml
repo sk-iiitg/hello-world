@@ -1,7 +1,5 @@
 name: Deploy
 on:
-  schedule: # Run this job at 12AM GMT and 12PM GMT daily.
-    - cron: '0 */12 * * *'
   workflow_dispatch: {}
   push:
 
@@ -17,15 +15,16 @@ jobs:
 
   master-reset:
     name: Run Deploy Script with master
-    needs: 
-      [
-        deploy,
-      ]
+    needs: deploy
     if: failure()
-    runs-on: ubuntu-latest
-     
+    runs-on: ubuntu-latest  
     steps:
       - name: Run
 
         run: |
           echo hello
+      - name: sai baba
+        run: exit 1
+      - name: Pager Alert
+        if: failure()
+        run: echo hello
