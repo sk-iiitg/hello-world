@@ -24,7 +24,7 @@ jobs:
         run: |
           echo hello
       - name: sai baba
-        run: exit 1
+        run: exit 0
       - name: Pager Alert
         if: failure()
         run: echo hello
