@@ -20,6 +20,6 @@ jobs:
   run-short-integration-tests:
     name: Run Short Integration Tests
     needs: your_job
-    uses: ./.github/workflows/integration-test.yaml
+    uses: ./.github/workflows/prechecks.yml
     with:
       apiserver_commit: ${{ needs.deploy.outputs.git_commit_hash_apiserver }}
