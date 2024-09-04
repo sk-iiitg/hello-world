@@ -1,16 +1,17 @@
-name: Prechecks
-
+name: Integration Test - Manual
 on:
-  workflow_dispatch: {}
-  push:
-    branches-ignore:
-      - bors/*.tmp
+  workflow_call:
+    inputs:
+      apiserver_commit:
+        description: 'Expected APIServer git commit hash'
+        required: false
+        type: string
+        default: ''
 jobs:
   env:
     name: Env
     runs-on: ubuntu-latest
     steps:
-      - name: Precheck
-        run: |
-          echo "Job ID: $GITHUB_JOB"
-          echo "Run ID: $GITHUB_RUN_ID"
+      - name: Checkout
+        if: inputs.apiserver_commit
+        run: echo "hello"
