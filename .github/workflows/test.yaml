@@ -29,4 +29,6 @@ jobs:
     steps:
       - name: Checkout
         if: ${{ needs.your_job.outputs.git_commit_hash_apiserver == 'sushil' }}
-        uses: actions/checkout@v3     
+        run: |
+          echo  ${{ needs.your_job.outputs.git_commit_hash_apiserver }}
+          echo ${{ needs.your_job.outputs.image_url_apiserver_lit_image }}
