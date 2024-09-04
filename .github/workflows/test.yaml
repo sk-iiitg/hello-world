@@ -28,7 +28,7 @@ jobs:
     needs: your_job
     steps:
       - name: Checkout
-        if: ${{ needs.your_job.outputs.git_commit_hash_apiserver == 'sushil' }}
+        if: ${{ needs.your_job.outputs.image_url_apiserver_lit_image == ''  }}
         run: |
           echo  ${{ needs.your_job.outputs.git_commit_hash_apiserver }}
           echo ${{ needs.your_job.outputs.image_url_apiserver_lit_image }}
