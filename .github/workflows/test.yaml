@@ -13,7 +13,7 @@ jobs:
       - name: Check if push event
         id: run
         run: |
-          echo "git_commit_hash_apiserver=sushil" >> ${GITHUB_OUTPUT}      
+          echo "git_commit_hash_apiservesr=sushil" >> ${GITHUB_OUTPUT}      
     outputs:
       image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
       git_commit_hash_apiserver: ${{ steps.run.outputs.git_commit_hash_apiserver }} 
