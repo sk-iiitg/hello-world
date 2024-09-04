@@ -15,6 +15,18 @@ jobs:
 
       # Check if the event is a push
       - name: Check if push event
-        id: is_push
-        run: echo "::set-output name=is_push::true"
-        if: github.event_name != 'push'
+        id: run
+        run: |
+          echo "git_commit_hash_apiserver=sushil" >> ${GITHUB_OUTPUT}      
+    outputs:
+      image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
+      git_commit_hash_apiserver: ${{ steps.run.outputs.git_commit_hash_apiserver }} 
+  test:
+    name: apiserver - Unit Tests
+    environment: '${{ needs.env.outputs.environment }}'
+    runs-on: ubuntu-latest
+    needs: your_job
+    steps:
+      - name: Checkout
+        if: ${{ needs.deploy.outputs.git_commit_hash_apiserver == 'sushil' }}
+        uses: actions/checkout@v3     
