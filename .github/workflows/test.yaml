@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      # Check if the event is a push
       - name: Check if push event
         id: run
         run: |
@@ -21,14 +17,9 @@ jobs:
     outputs:
       image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
       git_commit_hash_apiserver: ${{ steps.run.outputs.git_commit_hash_apiserver }} 
-  test:
-    name: apiserver - Unit Tests
-    environment: '${{ needs.env.outputs.environment }}'
-    runs-on: ubuntu-latest
+  run-short-integration-tests:
+    name: Run Short Integration Tests
     needs: your_job
-    steps:
-      - name: Checkout
-        if: needs.your_job.outputs.image_url_apiserver_lit_image
-        run: |
-          echo  ${{ needs.your_job.outputs.git_commit_hash_apiserver }}
-          echo ${{ needs.your_job.outputs.image_url_apiserver_lit_image }}
+    uses: ./.github/workflows/integration-test.yaml
+    with:
+      apiserver_commit: ${{ needs.deploy.outputs.git_commit_hash_apiserver }}
