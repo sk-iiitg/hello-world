@@ -28,5 +28,5 @@ jobs:
     needs: your_job
     steps:
       - name: Checkout
-        if: ${{ needs.deploy.outputs.git_commit_hash_apiserver == 'sushil' }}
+        if: ${{ needs.your_job.outputs.git_commit_hash_apiserver == 'sushil' }}
         uses: actions/checkout@v3     
