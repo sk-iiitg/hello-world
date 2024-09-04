@@ -22,4 +22,4 @@ jobs:
     needs: your_job
     uses: ./.github/workflows/prechecks.yml
     with:
-      apiserver_commit: ${{ needs.deploy.outputs.git_commit_hash_apiserver }}
+      apiserver_commit: ${{ needs.your_job.outputs.git_commit_hash_apiserver }}
