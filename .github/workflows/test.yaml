@@ -8,6 +8,7 @@ on:
 jobs:
   your_job:
     runs-on: ubuntu-latest
+    if: ${{ github.base_ref != 'master' }}
 
     steps:
       - name: Check if push event
