@@ -7,7 +7,7 @@
 <title>Kitab Khuli Hai</title>
 </head>
 <body style="background-color:tomato;">
-
+v vb
 <%String from=(String)session.getAttribsssute("from"); %>
 <%String to=(String)session.getAttribute("to"); %>
 <% String date=(String)session.getAttribute("date"); %>
