@@ -17,4 +17,4 @@ jobs:
           fetch-depth: 0
           ref: sk
     - name: Build with Gradle
-      run: ls
+      run: ls -lrt
