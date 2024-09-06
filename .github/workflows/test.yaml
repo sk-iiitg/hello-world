@@ -1,0 +1,26 @@
+name: Your GitHub Actions Workflow
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  your_job:
+    runs-on: ubuntu-latest
+    if: ${{ github.base_ref != 'master' }}
+
+    steps:
+      - name: Check if push event
+        id: run
+        run: |
+          echo "git_commit_hash_apiservesr=sushil" >> ${GITHUB_OUTPUT}      
+    outputs:
+      image_url_apiserver_lit_image: ${{ steps.run.outputs.image_url_apiserver_lit_image }}
+      git_commit_hash_apiserver: ${{ steps.run.outputs.git_commit_hash_apiserver }} 
+  run-short-integration-tests:
+    name: Run Short Integration Tests
+    needs: your_job
+    uses: ./.github/workflows/prechecks.yml
+    with:
+      apiserver_commit: ${{ needs.your_job.outputs.git_commit_hash_apiserver }}

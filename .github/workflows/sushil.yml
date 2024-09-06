@@ -1,0 +1,30 @@
+name: Deploy
+on:
+  workflow_dispatch: {}
+  push:
+    branches-ignore:
+      - bors/*.tmp
+      - master # Deploys happen before merge with bors.
+jobs:
+  env:
+    name: Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run
+        id: run
+        run: |
+          echo hello
+          sleep 300
+  check_pr_labels_job:
+    runs-on: ubuntu-latest
+    name: A job to check the PR labels contain given labels
+    steps:
+    - name: Check PR labels action step
+      id: check_pr_labels
+      uses: shioyang/check-pr-labels-on-push-action@v1.0.9
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        labels: '["enhancement"]'
+      timeout-minutes: 5
+    - name: See result
+      run: echo "${{ steps.check_pr_labels.outputs.result }}"           

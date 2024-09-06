@@ -1,0 +1,25 @@
+name: Create Pull Request
+
+on:
+  push:
+    branches:
+      - master  # Adjust this based on your workflow trigger
+  workflow_dispatch:
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Create Pull Request
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ENV_NAME: production  # Replace with your environment variable
+        PROMOTION_BRANCH: promotion-branch-name  # Replace with your promotion branch
+        TARGET_BRANCH: target-branch-name  # Replace with your target branch
+        TRIGGER_ACTOR: ${{ github.actor }}
+      run: |
+        echo $TRIGGER_ACTOR

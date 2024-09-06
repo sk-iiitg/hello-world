@@ -1,0 +1,17 @@
+name: Integration Test - Manual
+on:
+  workflow_call:
+    inputs:
+      apiserver_commit:
+        description: 'Expected APIServer git commit hash'
+        required: false
+        type: string
+        default: ''
+jobs:
+  env:
+    name: Env
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        if: inputs.apiserver_commit
+        run: echo "hello"
