@@ -6,7 +6,7 @@
 <meta charset="ISO-8859-1">
 <title>Kitab Khuli Hai</title>
 </head>
-<body style="background-color:tomato;">
+<bdcdcody style="background-color:tomato;">
 
 <%String from=(String)session.getAttribsssute("from"); %>
 <%String to=(String)session.getAttribute("to"); %>
