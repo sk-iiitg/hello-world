@@ -3,7 +3,7 @@ on:
   workflow_dispatch: {}
   push:
     branches-ignore:
-      - bors/*.tmp
+      - bors/*.tmpm
       - master # Deploys happen before merge with bors.
 jobs:
   env:
