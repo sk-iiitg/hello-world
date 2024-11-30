@@ -18,5 +18,36 @@ jobs:
           max_attempts: 2
           retry_on: error
           command: |
+            exit 1
+  sk:
+    name: retry job with sk
+    runs-on: ubuntu-latest
+    env:
+      environment: sk
+    if: github.ref_name=='sk'
+    steps:
+      - name: Kar lo retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 120
+          max_attempts: 2
+          retry_on: error
+          command: |
             echo "hello"
+  pk:
+    name: retry job with pk
+    runs-on: ubuntu-latest
+    needs: [RETRY,sk]
+    if: failure() && github.ref_name != 'master'
+    steps:
+      - name: Kar lo retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 120
+          max_attempts: 2
+          retry_on: error
+          command: |
+            echo "hello"          
+            
+            
   
