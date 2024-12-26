@@ -4,27 +4,14 @@ on:
   push:
 
 jobs:
-  deploy:
-    name: Run Deploy Script
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run
-        run: |
-          exit 1
-
-
+  
   master-reset:
     name: Run Deploy Script with master
-    needs: deploy
-    if: failure()
     runs-on: ubuntu-latest  
     steps:
       - name: Run
 
         run: |
           echo hello
-      - name: sai baba
-        run: exit 0
-      - name: Pager Alert
-        if: failure()
-        run: echo hello
+          gh_ref='${{ github.ref_name }}'
+          echo $gh_ref
