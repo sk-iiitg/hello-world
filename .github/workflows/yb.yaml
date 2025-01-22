@@ -1,4 +1,4 @@
-name: Integration Test - Manual
+name: Integration Test - AUTO
 on:
   workflow_dispatch:
     inputs:
