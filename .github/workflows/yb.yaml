@@ -19,7 +19,7 @@ jobs:
     name: Require approvals
     needs:
       - env
-    if: ${{ "pk" =="dk"}}
+    if: ${{ inputs.batch=='true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Generate token 
