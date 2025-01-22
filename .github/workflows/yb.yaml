@@ -17,7 +17,6 @@ jobs:
 
   approval: # fails when timed out or denied.
     name: Require approvals
-    if: inputs.batch=='true'
     needs:
       - env
     runs-on: ubuntu-latest
