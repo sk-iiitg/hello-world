@@ -30,7 +30,7 @@ jobs:
     needs:
       - env
       - approval
-    if: ${{ !failure() }}
+    if: ${{ needs.approval.result == 'success' || needs.approval.result == null }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate token 
