@@ -1,0 +1,38 @@
+name: Integration Test - Manual
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: 'Run at batch priority.'
+        required: false
+        type: boolean
+        default: true
+jobs:
+  env:
+    name: Env
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+  approval: # fails when timed out or denied.
+    name: Require approvals
+    needs:
+      - env
+    if: ${{ "pk" =="dk"}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token 
+        uses: actions/checkout@v3
+  run: # fails when timed out or denied.
+    name: RUN JOB
+    needs:
+      - env
+      - approval
+    if: ${{ !failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token 
+        uses: actions/checkout@v3     
+        
+        
