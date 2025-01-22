@@ -19,11 +19,12 @@ jobs:
     name: Require approvals
     needs:
       - env
-    if: ${{ inputs.batch=='true'}}
     runs-on: ubuntu-latest
     steps:
       - name: Generate token 
         uses: actions/checkout@v3
+      - name: sk
+        run: sleep 30;
   run: # fails when timed out or denied.
     name: RUN JOB
     needs:
