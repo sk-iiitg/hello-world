@@ -31,7 +31,7 @@ jobs:
     needs:
       - env
       - approval
-    if: ${{ needs.approval.result == 'success' || needs.approval.result == null }}
+    if: ${{ !failure() && needs.approval.result != 'cancelled' }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate token 
